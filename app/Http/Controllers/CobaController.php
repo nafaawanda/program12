@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
+class CobaController extends Controller
+{
+    public function updateStatus($nim)
+    {
+        if (!Auth::guard('admin')->check()) {
+            abort(403, 'Unauthorized');
+        }
+        $mahasiswa = DB::table('mahasiswas')->where('nim', $nim)->first();
+        if (!$mahasiswa) {
+            return redirect()->back()->with('error', 'Mahasiswa tidak ditemukan.');
+        }
+        $newStatus = $mahasiswa->status ? 0 : 1;
+        DB::table('mahasiswas')->where('nim', $nim)->update(['status' => $newStatus]);
+        return redirect()->back()->with('success', 'Status mahasiswa berhasil diubah.');
+    }
+
+    public function index(Request $request)
+    {
+        $admin = Auth::guard('admin')->user();
+        $staff = Auth::guard('staff')->user();
+        $mahasiswaGuard = Auth::guard('mahasiswas')->user();
+        $q = trim((string) $request->query('q', ''));
+
+        if ($admin || $staff) {
+            $mahasiswa = DB::table('mahasiswas')
+                ->join('prodis', 'mahasiswas.prodi_id', '=', 'prodis.id')
+                ->select('mahasiswas.*', 'prodis.nama_prodi')
+                ->when($q !== '', function ($query) use ($q) {
+                    $like = '%' . $q . '%';
+                    $query->where(function ($query) use ($like) {
+                        $query->where('mahasiswas.nim', 'like', $like)
+                            ->orWhere('mahasiswas.nama', 'like', $like)
+                            ->orWhere('mahasiswas.tempat_lahir', 'like', $like)
+                            ->orWhere('mahasiswas.th_masuk', 'like', $like)
+                            ->orWhere('prodis.nama_prodi', 'like', $like);
+                    });
+                })
+                ->orderBy('mahasiswas.nim')
+                ->get();
+            $cekRole = (object)['role' => $staff ? 'staff' : 'admin'];
+        } elseif ($mahasiswaGuard) {
+            $ceknim = $mahasiswaGuard->nim;
+            $mahasiswa = DB::table('mahasiswas')
+                ->join('prodis', 'mahasiswas.prodi_id', '=', 'prodis.id')
+                ->select('mahasiswas.*', 'prodis.nama_prodi')
+                ->where('nim', '=', $ceknim)
+                ->get();
+            $cekRole = $mahasiswaGuard;
+        } else {
+            return redirect('/login');
+        }
+
+        return view('mahasiswa.index_mhs', ['mhs' => $mahasiswa, 'cekRole' => $cekRole, 'q' => $q]);
+    }
+
+    public function viewlogin()
+    {
+        return view('login.index_login');
+    }
+
+    public function login(Request $request)
+    {
+        $credentials = $request->only('nim', 'password');
+        if (Auth::guard('mahasiswas')->attempt($credentials)) {
+            return redirect()->intended('/mhs');
+        } else {
+            return back()->withErrors(['login' => 'NIM atau Password salah']);
+        }
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::guard('mahasiswas')->logout();
+        Auth::guard('admin')->logout();
+        Auth::guard('staff')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/login');
+    }
+
+    public function tambah()
+    {
+        $prodi = DB::table('prodis')->orderBy('nama_prodi')->get();
+        return view('mahasiswa.tambah_mhs', ['prodi' => $prodi]);
+    }
+
+    public function simpan(Request $request)
+    {
+        $request->validate([
+            'nim' => 'required|unique:mahasiswas,nim',
+            'nama' => 'required',
+            'tempat_lahir' => 'required',
+            'tgl_lahir' => 'required|date',
+            'prodi_id' => 'required',
+            'th_masuk' => 'required|digits:4',
+            'email' => 'required|email|unique:mahasiswas,email',
+            'no_telp' => 'required',
+            'password' => 'required|min:4',
+            'role' => 'required',
+        ]);
+
+        DB::table('mahasiswas')->insert([
+            'nim' => $request->nim,
+            'nama' => $request->nama,
+            'tempat_lahir' => $request->tempat_lahir,
+            'tgl_lahir' => $request->tgl_lahir,
+            'prodi_id' => $request->prodi_id,
+            'th_masuk' => $request->th_masuk,
+            'email' => $request->email,
+            'no_telp' => $request->no_telp,
+            'password' => bcrypt($request->password),
+            'role' => $request->role,
+            'status' => 1,
+        ]);
+        return redirect('/mhs/show');
+    }
+
+    public function edit($id)
+    {
+        $mahasiswa = DB::table('mahasiswas')->where('nim', $id)->first();
+        $prodi = DB::table('prodis')->orderBy('nama_prodi')->get();
+        return view('mahasiswa.edit_mhs', ['mhs' => $mahasiswa, 'prodi' => $prodi]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nama' => 'required',
+            'tempat_lahir' => 'required',
+            'tgl_lahir' => 'required|date',
+            'prodi_id' => 'required',
+            'th_masuk' => 'required|digits:4',
+            'email' => 'required|email|unique:mahasiswas,email,' . $id . ',nim',
+            'no_telp' => 'required',
+        ]);
+
+        DB::table('mahasiswas')
+            ->where('nim', $id)
+            ->update([
+                'nama' => $request->nama,
+                'tempat_lahir' => $request->tempat_lahir,
+                'tgl_lahir' => $request->tgl_lahir,
+                'prodi_id' => $request->prodi_id,
+                'th_masuk' => $request->th_masuk,
+                'email' => $request->email,
+                'no_telp' => $request->no_telp,
+            ]);
+
+        return redirect('/mhs/show')->with('success', 'Data mahasiswa berhasil diperbarui.');
+    }
+
+    public function hapus($id)
+    {
+        // Cek apakah mahasiswa pernah melakukan peminjaman
+        $peminjaman = DB::table('pinjams')
+            ->where('nim', $id)
+            ->where('borrower_type', 'mahasiswa')
+            ->exists();
+        
+        if ($peminjaman) {
+            return redirect('/mhs/show')->with('error', 'Mahasiswa tidak bisa dihapus karena pernah melakukan transaksi peminjaman.');
+        }
+        
+        DB::table('mahasiswas')->where('nim', $id)->delete();
+        return redirect('/mhs/show')->with('success', 'Mahasiswa berhasil dihapus.');
+    }
+}
