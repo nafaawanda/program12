@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -7,8 +6,12 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\PinjamController;
-
 use App\Http\Controllers\ForgotPasswordController;
+
+// Health check route for Render.com
+Route::get('/ping', function () {
+    return response()->json(['status' => 'ok'], 200);
+});
 
 
 
@@ -111,13 +114,13 @@ Route::post('password/reset', [ForgotPasswordController::class, 'reset'])->name(
 
 // Admin Login
 Route::get('/admin/login', [App\Http\Controllers\AdminLoginController::class, 'showLoginForm'])->name('admin.login');
-Route::post('/admin/login', [App\Http\Controllers\AdminLoginController::class, 'login']);
+Route::post('/admin/login', [App\Http\Controllers\AdminLoginController::class, 'login'])->name('admin.login.post');
 Route::post('/admin/logout', [App\Http\Controllers\AdminLoginController::class, 'logout'])->name('admin.logout');
 
 // Mahasiswa Login
 // Route login lama mahasiswa di-nonaktifkan, diganti dengan login mandiri
 // Route::get('/mahasiswa/login', [App\Http\Controllers\MahasiswaLoginController::class, 'showLoginForm'])->name('mahasiswa.login');
-Route::post('/mahasiswa/login', [App\Http\Controllers\MahasiswaLoginController::class, 'login']);
+Route::post('/mahasiswa/login', [App\Http\Controllers\MahasiswaLoginController::class, 'login'])->name('mahasiswa.login.post');
 Route::post('/mahasiswa/logout', [App\Http\Controllers\MahasiswaLoginController::class, 'logout'])->name('mahasiswa.logout');
 // Route::get('/mhs/show', function () {
 //     return view('contoh.tampil_data', [
@@ -151,7 +154,7 @@ Route::get('/logout', [CobaController::class, 'logout'])->name('logout');
 // ============================================
 // ROUTE GROUP: AKSES UNTUK ADMIN DAN MAHASISWA
 // ============================================
-// Middleware 'AuthMahasiswa:mhs,admin' artinya:
+// Middleware 'AuthMhs:mhs,admin' artinya:
 // - User harus sudah login (dicek oleh middleware)
 // - Role user harus 'mhs' ATAU 'admin' (keduanya boleh akses)
 //
@@ -163,14 +166,14 @@ Route::get('/logout', [CobaController::class, 'logout'])->name('logout');
 Route::middleware('AuthMhs:mhs,admin,staff')->group(function () {
 
     // ============================================
-    // ROUTE AKSES BERSAMA (ADMIN & MAHASISWA)
-    // ============================================
-    // Route di bawah ini bisa diakses oleh admin dan mahasiswa
-    // Admin dan mahasiswa memiliki akses yang sama untuk route ini
+// ROUTE AKSES BERSAMA (ADMIN & MAHASISWA)
+// ============================================
+// Route di bawah ini bisa diakses oleh admin dan mahasiswa
+// Admin dan mahasiswa memiliki akses yang sama untuk route ini
 
 
-    // Route untuk melihat data mahasiswa
-    // Mahasiswa: hanya bisa lihat data sendiri
+// Route untuk melihat data mahasiswa
+// Mahasiswa: hanya bisa lihat data sendiri
     Route::get('/mhs/show', [CobaController::class, 'index'])->name('mhs.index');
 
     // Route untuk melihat data mahasiswa (admin)
@@ -235,7 +238,7 @@ Route::middleware('AuthMhs:mhs,admin,staff')->group(function () {
     Route::get('/autocomplete-mahasiswa', [\App\Http\Controllers\PinjamController::class, 'autocompleteMahasiswa'])->name('autocomplete.mahasiswa');
     Route::get('/autocomplete-buku', [\App\Http\Controllers\PinjamController::class, 'autocompleteBuku'])->name('autocomplete.buku');
     Route::get('/autocomplete-peminjam', [\App\Http\Controllers\PinjamController::class, 'autocompletePeminjam'])->name('autocomplete.peminjam');
-    Route::post('/pinjam/simpan', [\App\Http\Controllers\PinjamController::class, 'simpan']);
+    Route::post('/pinjam/simpan', [\App\Http\Controllers\PinjamController::class, 'simpan'])->name('pinjam.simpan');
 
     // ============================================
     // ROUTE PENGEMBALIAN BUKU (HANYA ADMIN)
