@@ -7,6 +7,7 @@ use App\Http\Controllers\BukuController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\PinjamController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\RakController;
 
 // Health check route for Render.com
 Route::get('/ping', function () {
@@ -184,6 +185,9 @@ Route::middleware('AuthMhs:mhs,admin,staff')->group(function () {
     // Baik admin maupun mahasiswa bisa melihat daftar buku
     Route::get('/bk/show', [\App\Http\Controllers\BukuController::class, 'index'])->name('bk.index');
 
+    // Route untuk melihat daftar rak buku
+    Route::get('/rak/show', [RakController::class, 'index'])->name('rak.index');
+
     // Route untuk melihat daftar prodi (bisa diakses admin & mahasiswa)
     Route::get('/prd/show', [\App\Http\Controllers\ProdiController::class, 'index'])->name('prd.index');
 
@@ -211,6 +215,17 @@ Route::middleware('AuthMhs:mhs,admin,staff')->group(function () {
     Route::get('/bk/edit/{id}', [\App\Http\Controllers\BukuController::class, 'edit']);
     Route::post('/bk/update/{id}', [\App\Http\Controllers\BukuController::class, 'update']);
     Route::get('/bk/hapus/{id}', [\App\Http\Controllers\BukuController::class, 'hapus']);
+
+    // ============================================
+    // ROUTE CRUD RAK BUKU (HANYA ADMIN)
+    // ============================================
+    Route::middleware('AuthMhs:admin')->group(function () {
+        Route::get('/rak/baru', [RakController::class, 'tambah'])->name('rak.baru');
+        Route::post('/rak/simpan', [RakController::class, 'simpan'])->name('rak.simpan');
+        Route::get('/rak/edit/{id}', [RakController::class, 'edit'])->name('rak.edit');
+        Route::post('/rak/update/{id}', [RakController::class, 'update'])->name('rak.update');
+        Route::get('/rak/hapus/{id}', [RakController::class, 'hapus'])->name('rak.hapus');
+    });
 
     // ============================================
     // ROUTE CRUD PRODI (HANYA ADMIN)

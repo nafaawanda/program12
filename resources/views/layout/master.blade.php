@@ -108,6 +108,7 @@
                             <a class="collapse-item" href="/staff/show">Staff</a>
                             <a class="collapse-item" href="/prd/show">Prodi</a>
                             <a class="collapse-item" href="/bk/show">Buku</a>
+                            <a class="collapse-item" href="/rak/show">Rak Buku</a>
                             <a class="collapse-item" href="/pinjam">Peminjaman</a>
                             <a class="collapse-item" href="/kembali">Pengembalian</a>
                             <a class="collapse-item" href="{{ route('laporan.pengembalian') }}">Laporan Peminjaman</a>
@@ -117,6 +118,7 @@
                             <a class="collapse-item" href="/staff/mahasiswa">Mahasiswa</a>
                             <a class="collapse-item" href="/staff/prd/show">Prodi</a>
                             <a class="collapse-item" href="/staff/bk/show">Buku</a>
+                            <a class="collapse-item" href="/rak/show">Rak Buku</a>
                             <a class="collapse-item" href="/staff/pinjam">Peminjaman</a>
                             <a class="collapse-item" href="/staff/kembali">Pengembalian</a>
                             <a class="collapse-item" href="/staff/laporan/pengembalian">Laporan Peminjaman</a>
